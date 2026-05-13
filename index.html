@@ -1,390 +1,293 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Calendar</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CC Tips">
+<meta name="theme-color" content="#080810">
+<title>Claude Code Tips</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080810;
+    --surface: rgba(20,20,32,0.9);
+    --border: rgba(255,255,255,0.08);
+    --text: #ffffff;
+    --muted: rgba(255,255,255,0.4);
+    --accent: #00D4FF;
+  }
+  html, body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    background: linear-gradient(135deg, #080810 0%, #0f0f1e 50%, #080810 100%);
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding: env(safe-area-inset-top, 20px) 0 env(safe-area-inset-bottom, 20px); }
 
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow-x: hidden;
-        }
+  .app { max-width: 640px; margin: 0 auto; padding: 24px 16px 40px; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #2f2f2f;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
+  /* Header */
+  .header { text-align: center; margin-bottom: 24px; }
+  .header-label { font-family: 'Space Mono', monospace; color: var(--accent); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; }
+  .header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+  .header p { color: var(--muted); font-size: 12px; margin-top: 4px; }
 
-        .calendar-container {
-            max-width: 450px;
-            width: 95%;
-            margin: 0;
-            background: #2f2f2f;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
+  /* Search */
+  .search { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 11px 16px; color: var(--text); font-size: 14px; font-family: inherit; outline: none; margin-bottom: 14px; -webkit-appearance: none; }
+  .search::placeholder { color: var(--muted); }
+  .search:focus { border-color: rgba(0,212,255,0.4); }
 
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
+  /* Filter tabs */
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+  .filter-btn { background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 20px; color: var(--muted); padding: 6px 14px; font-size: 12px; font-family: inherit; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
 
-        .month-year {
-            font-size: 18px;
-            font-weight: 600;
-            color: #fff;
-        }
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 10px; overflow: hidden; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .card.open { border-color: var(--card-color); box-shadow: 0 0 28px rgba(var(--card-rgb), 0.18); background: linear-gradient(135deg, rgba(var(--card-rgb),0.12) 0%, rgba(15,15,25,0.97) 100%); }
+  .card-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+  .card-emoji { font-size: 22px; flex-shrink: 0; }
+  .card-meta { flex: 1; min-width: 0; }
+  .card-title-row { display: flex; align-items: center; gap: 6px; }
+  .card-num { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 13px; color: var(--card-color); }
+  .card-name { font-weight: 600; font-size: 14px; color: var(--text); }
+  .card-short { color: var(--muted); font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-arrow { color: var(--muted); font-size: 18px; transition: transform 0.3s; flex-shrink: 0; }
+  .card.open .card-arrow { transform: rotate(90deg); }
 
-        .nav-button {
-            background: #404040;
-            border: none;
-            color: #fff;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        }
+  /* Body */
+  .card-body { padding: 0 16px 18px; display: none; animation: fadeDown 0.25s ease; }
+  .card.open .card-body { display: block; }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
-        .nav-button:hover {
-            background: #4a4a4a;
-        }
+  .section-label { font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--card-color); margin-bottom: 8px; margin-top: 14px; }
 
-        .weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
-            margin-bottom: 8px;
-        }
+  .when-text { color: rgba(255,255,255,0.75); font-size: 13px; line-height: 1.5; }
 
-        .weekday {
-            text-align: center;
-            font-size: 12px;
-            font-weight: 500;
-            color: #888;
-            padding: 8px 0;
-        }
+  .steps { display: flex; flex-direction: column; gap: 7px; }
+  .step { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num { background: var(--card-color); color: #000; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+  .step-text { color: rgba(255,255,255,0.8); font-size: 13px; line-height: 1.5; }
+  .step-text.mono { font-family: 'Space Mono', monospace; font-size: 11px; }
 
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
-            margin-bottom: 20px;
-        }
+  .prompt-box { background: rgba(0,0,0,0.4); border: 1px solid rgba(var(--card-rgb),0.3); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .prompt-text { color: #fff; font-size: 11px; font-family: 'Space Mono', monospace; line-height: 1.5; flex: 1; }
+  .copy-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: #fff; padding: 5px 10px; font-size: 11px; font-family: 'Space Mono', monospace; cursor: pointer; flex-shrink: 0; transition: all 0.2s; -webkit-appearance: none; }
+  .copy-btn.copied { background: #10B981; border-color: #10B981; }
 
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
-            position: relative;
-        }
+  .warn-box { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); border-radius: 8px; padding: 9px 12px; display: flex; gap: 8px; align-items: flex-start; margin-top: 14px; }
+  .warn-text { color: rgba(251,191,36,0.9); font-size: 12px; line-height: 1.5; }
 
-        .calendar-day:hover {
-            transform: scale(1.05);
-        }
+  .footer { text-align: center; margin-top: 28px; color: rgba(255,255,255,0.15); font-size: 10px; font-family: 'Space Mono', monospace; line-height: 1.8; }
 
-        .calendar-day.other-month {
-            color: #555;
-        }
+  /* Install banner */
+  .install-banner { background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.25); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; display: flex; gap: 10px; align-items: center; }
+  .install-banner.hidden { display: none; }
+  .install-text { color: rgba(0,212,255,0.9); font-size: 12px; line-height: 1.5; flex: 1; }
+  .install-close { color: var(--muted); font-size: 18px; cursor: pointer; flex-shrink: 0; }
 
-        .calendar-day.today {
-            background: #ff4757;
-            color: white;
-            font-weight: 700;
-        }
-
-        .calendar-day.has-tasks {
-            background: #3742fa;
-            color: white;
-        }
-
-        .calendar-day.today.has-tasks {
-            background: linear-gradient(135deg, #ff4757 50%, #3742fa 50%);
-        }
-
-        .calendar-day.selected {
-            ring: 2px solid #ffa502;
-            outline: 2px solid #ffa502;
-        }
-
-        .tasks-section {
-            border-top: 1px solid #404040;
-            padding-top: 20px;
-        }
-
-        .selected-date {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: #ffa502;
-        }
-
-        .task-list {
-            space-y: 8px;
-        }
-
-        .task-item {
-            background: #404040;
-            padding: 12px;
-            border-radius: 8px;
-            border-left: 4px solid;
-            margin-bottom: 8px;
-        }
-
-        .task-item.priority-high {
-            border-left-color: #ff4757;
-        }
-
-        .task-item.priority-medium {
-            border-left-color: #ffa502;
-        }
-
-        .task-item.priority-low {
-            border-left-color: #3742fa;
-        }
-
-        .task-title {
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-
-        .task-meta {
-            font-size: 12px;
-            color: #888;
-        }
-
-        .no-tasks {
-            text-align: center;
-            color: #888;
-            font-style: italic;
-            padding: 20px;
-        }
-
-        .task-indicator {
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
-            width: 6px;
-            height: 6px;
-            background: #3742fa;
-            border-radius: 50%;
-        }
-    </style>
+  /* Empty state */
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
+</style>
 </head>
 <body>
-    <div class="calendar-container">
-        <div class="calendar-header">
-            <button class="nav-button" onclick="changeMonth(-1)">‹</button>
-            <div class="month-year" id="monthYear"></div>
-            <button class="nav-button" onclick="changeMonth(1)">›</button>
-        </div>
+<div class="app">
 
-        <div class="weekdays">
-            <div class="weekday">Пн</div>
-            <div class="weekday">Вт</div>
-            <div class="weekday">Ср</div>
-            <div class="weekday">Чт</div>
-            <div class="weekday">Пт</div>
-            <div class="weekday">Сб</div>
-            <div class="weekday">Вс</div>
-        </div>
+  <!-- Install banner (iOS) -->
+  <div class="install-banner" id="installBanner">
+    <span style="font-size:20px">📲</span>
+    <div class="install-text">Добавь на экран домой: Safari → <strong>Поделиться</strong> → <strong>На экран «Домой»</strong> — работает офлайн!</div>
+    <span class="install-close" onclick="document.getElementById('installBanner').classList.add('hidden')">✕</span>
+  </div>
 
-        <div class="calendar-grid" id="calendarGrid"></div>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-label">Claude Code</div>
+    <h1>10 правил продуктивности</h1>
+    <p>by Boris Cherny & team · нажми на карточку</p>
+  </div>
 
-        <div class="tasks-section">
-            <div class="selected-date" id="selectedDate">Сегодня, 4 июня 2025</div>
-            <div class="task-list" id="taskList">
-                <div class="no-tasks">Выберите дату для просмотра задач</div>
-            </div>
+  <!-- Search -->
+  <input class="search" id="search" type="search" placeholder="🔍  Поиск..." oninput="render()">
+
+  <!-- Filters -->
+  <div class="filters" id="filters"></div>
+
+  <!-- Cards -->
+  <div id="cards"></div>
+
+  <div class="footer">
+    правила добавлены в память Claude<br>
+    CLAUDE.md → git commit
+  </div>
+</div>
+
+<script>
+const tips = [
+  { id:1, emoji:"⚡", title:"Параллелизм", short:"3–5 сессий одновременно", color:"#00D4FF", rgb:"0,212,255", cat:"workflow",
+    when:"Когда задача крупная или есть несколько независимых фич",
+    how:["git worktree add ../project-b feature/branch-b","git worktree add ../project-c feature/branch-c","Открой 3 терминала с алиасами za / zb / zc","Запусти claude в каждом — они не конфликтуют"],
+    mono:[true,true,false,false],
+    prompt:null, warn:"Каждый worktree — отдельная директория. Не работай в одной папке из двух сессий." },
+
+  { id:2, emoji:"🗺️", title:"Plan Mode", short:"Сначала план, потом код", color:"#A78BFA", rgb:"167,139,250", cat:"workflow",
+    when:"Перед любой сложной/архитектурной задачей",
+    how:["Shift+Tab × 2 — войти в Plan Mode","Опиши задачу детально, дай Claude выработать план","Обсуди, при необходимости скорректируй","Только потом выходи из Plan Mode и начинай кодить"],
+    mono:[false,false,false,false],
+    prompt:"Review this plan as a staff engineer and point out any issues",
+    warn:"Если реализация пошла не так — ВЕРНИСЬ в Plan Mode, не проталкивай." },
+
+  { id:3, emoji:"📋", title:"CLAUDE.md", short:"Память для Claude Code", color:"#F59E0B", rgb:"245,158,11", cat:"memory",
+    when:"После каждой ошибки Claude Code или нового правила",
+    how:["Скажи: \"Update your CLAUDE.md so you don't make that mistake again\"","Держи файл < 1000 токенов — удаляй устаревшее","git add CLAUDE.md && git commit -m 'chore: update rules'","CLAUDE.md в корне проекта — Claude читает его автоматически"],
+    mono:[false,false,true,false],
+    prompt:"Update your CLAUDE.md so you don't make that mistake again",
+    warn:"Не раздувай файл. Краткость = эффективность." },
+
+  { id:4, emoji:"🛠️", title:"Skills / Slash-команды", short:"Автоматизируй повторяющееся", color:"#10B981", rgb:"16,185,129", cat:"automation",
+    when:"Если делаешь одно и то же чаще раза в день",
+    how:["Создай файл .claude/commands/my-skill.md","Опиши задачу + шаги + контекст","Вызывай: /my-skill в Claude Code","Коммить в git — это институциональные знания"],
+    mono:[true,false,true,false],
+    prompt:"Create a slash command for this workflow so I can reuse it", warn:null },
+
+  { id:5, emoji:"🐛", title:"Фикс багов", short:"Дай Claude — не микроменеджь", color:"#EF4444", rgb:"239,68,68", cat:"prompting",
+    when:"Есть баг, падающие тесты, ошибки в CI",
+    how:["Вставь тред из Slack / лог ошибки","Скажи просто: \"fix\"","Или: \"Go fix the failing CI tests\"","Укажи на Docker-логи для distributed систем"],
+    mono:[false,false,false,false],
+    prompt:"Go fix the failing CI tests", warn:"Не объясняй КАК фиксить — Claude разберётся сам." },
+
+  { id:6, emoji:"💬", title:"Сильные промпты", short:"Провоцируй лучший результат", color:"#F97316", rgb:"249,115,22", cat:"prompting",
+    when:"Когда результат посредственный или нужно качество",
+    how:["\"Grill me on these changes and don't make a PR until I pass your test\"","\"Knowing everything you know now, scrap this and implement the elegant solution\"","\"Review this as a senior engineer — what would you change?\"","\"Don't just fix it — make it production-grade\""],
+    mono:[false,false,false,false],
+    prompt:"Knowing everything you know now, scrap this and implement the elegant solution", warn:null },
+
+  { id:7, emoji:"🖥️", title:"Терминал", short:"Настройка окружения", color:"#6366F1", rgb:"99,102,241", cat:"setup",
+    when:"При настройке рабочего места",
+    how:["Ghostty — рекомендуемый терминал","Используй /statusline — показ контекста и ветки","Цветовые табы для разных worktrees","fn × 2 на macOS — голосовой ввод (в 3× быстрее печати)"],
+    mono:[false,false,false,false],
+    prompt:null, warn:null },
+
+  { id:8, emoji:"🤖", title:"Subagents", short:"Больше мощности на задачу", color:"#EC4899", rgb:"236,72,153", cat:"workflow",
+    when:"Тяжёлая задача с множеством подзадач",
+    how:["Добавь \"use subagents\" в промпт","Claude запустит параллельные подагенты","Основной контекст остаётся чистым","Можно маршрутизировать на более мощную модель"],
+    mono:[false,false,false,false],
+    prompt:"Use subagents to tackle each part of this independently", warn:null },
+
+  { id:9, emoji:"📊", title:"Аналитика без SQL", short:"Claude пишет и запускает запросы", color:"#14B8A6", rgb:"20,184,166", cat:"automation",
+    when:"Нужна аналитика по БД / BigQuery / любой базе",
+    how:["Создай skill с bq CLI или psql","Опиши задачу на русском","Claude пишет запрос → запускает → интерпретирует","Всё в одном контексте, без переключений"],
+    mono:[false,false,false,false],
+    prompt:"Write and run a query to find [задача], then explain the results", warn:null },
+
+  { id:10, emoji:"🎓", title:"Обучение с Claude", short:"Учись в процессе работы", color:"#84CC16", rgb:"132,204,22", cat:"learning",
+    when:"Хочешь понять почему, а не только что",
+    how:["В /config выбери стиль \"Explanatory\" или \"Learning\"","\"Explain why you made this architectural decision\"","\"Generate an ASCII diagram of this protocol/flow\"","Создай skill spaced-repetition: объясни → Claude задаёт вопросы"],
+    mono:[false,false,false,false],
+    prompt:"Explain why you chose this approach and what alternatives exist", warn:null },
+];
+
+const cats = [
+  {id:"all",label:"Все"},{id:"workflow",label:"Workflow"},{id:"prompting",label:"Промпты"},
+  {id:"memory",label:"Память"},{id:"automation",label:"Автоматизация"},{id:"setup",label:"Настройка"},{id:"learning",label:"Обучение"}
+];
+
+let openId = null;
+let activeCat = "all";
+
+// Hide install banner if already standalone
+if (window.navigator.standalone) document.getElementById('installBanner').classList.add('hidden');
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const filtered = tips.filter(t =>
+    (activeCat === 'all' || t.cat === activeCat) &&
+    (q === '' || t.title.toLowerCase().includes(q) || t.short.toLowerCase().includes(q))
+  );
+
+  // Filters
+  document.getElementById('filters').innerHTML = cats.map(c =>
+    `<button class="filter-btn${activeCat===c.id?' active':''}" onclick="setCat('${c.id}')">${c.label}</button>`
+  ).join('');
+
+  // Cards
+  const container = document.getElementById('cards');
+  if (filtered.length === 0) { container.innerHTML = '<div class="empty">Ничего не найдено</div>'; return; }
+  container.innerHTML = filtered.map(t => cardHTML(t)).join('');
+}
+
+function cardHTML(t) {
+  const isOpen = openId === t.id;
+  return `
+  <div class="card${isOpen?' open':''}" style="--card-color:${t.color};--card-rgb:${t.rgb}" onclick="toggle(${t.id})">
+    <div class="card-header">
+      <span class="card-emoji">${t.emoji}</span>
+      <div class="card-meta">
+        <div class="card-title-row">
+          <span class="card-num">#${t.id}</span>
+          <span class="card-name">${t.title}</span>
         </div>
+        <div class="card-short">${t.short}</div>
+      </div>
+      <span class="card-arrow">›</span>
     </div>
+    ${isOpen ? `
+    <div class="card-body">
+      <div class="section-label">Когда применять</div>
+      <div class="when-text">${t.when}</div>
 
-    <script>
-        // Данные задач из вашей БД
-        const tasks = {
-            '2025-06-03': [
-                { title: 'Концерт Милославы на скрипке', priority: 'high', status: 'active' }
-            ],
-            '2025-06-04': [
-                { title: 'Отправить буху мили!', priority: 'high', status: 'active' },
-                { title: 'Взять груз', priority: 'high', status: 'active' }
-            ],
-            '2025-06-05': [
-                { title: 'Доделать дот номер', priority: 'high', status: 'active' },
-                { title: 'Добавить компании к грузоперевозкам', priority: 'high', status: 'completed' }
-            ],
-            '2025-06-08': [
-                { title: 'Телега + ноущен', priority: 'medium', status: 'active' }
-            ],
-            '2025-06-13': [
-                { title: 'Соединить ноущен с чатом GPT', priority: 'medium', status: 'active' }
-            ],
-            '2025-06-17': [
-                { title: 'Планерка с командой', priority: 'high', status: 'active' }
-            ],
-            '2025-06-20': [
-                { title: 'Проверка результатов', priority: 'medium', status: 'active' }
-            ]
-        };
+      <div class="section-label">Как делать</div>
+      <div class="steps">
+        ${t.how.map((s,i)=>`
+        <div class="step">
+          <div class="step-num">${i+1}</div>
+          <div class="step-text${t.mono[i]?' mono':''}">${s}</div>
+        </div>`).join('')}
+      </div>
 
-        let currentDate = new Date();
-        let selectedDate = new Date();
+      ${t.prompt ? `
+      <div class="section-label">Готовый промпт</div>
+      <div class="prompt-box">
+        <div class="prompt-text">${t.prompt}</div>
+        <button class="copy-btn" onclick="copyPrompt(event,'${t.id}','${escape(t.prompt)}')">copy</button>
+      </div>` : ''}
 
-        const monthNames = [
-            'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-        ];
+      ${t.warn ? `
+      <div class="warn-box">
+        <span>⚠️</span>
+        <div class="warn-text">${t.warn}</div>
+      </div>` : ''}
+    </div>` : ''}
+  </div>`;
+}
 
-        function formatDate(date) {
-            return date.toISOString().split('T')[0];
-        }
+function toggle(id) { openId = openId === id ? null : id; render(); }
+function setCat(id) { activeCat = id; render(); }
 
-        function formatDisplayDate(date) {
-            const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            
-            if (formatDate(date) === formatDate(today)) {
-                return 'Сегодня, ' + date.getDate() + ' ' + monthNames[date.getMonth()].toLowerCase() + ' ' + date.getFullYear();
-            } else if (formatDate(date) === formatDate(tomorrow)) {
-                return 'Завтра, ' + date.getDate() + ' ' + monthNames[date.getMonth()].toLowerCase() + ' ' + date.getFullYear();
-            } else {
-                return date.getDate() + ' ' + monthNames[date.getMonth()].toLowerCase() + ' ' + date.getFullYear();
-            }
-        }
+function copyPrompt(e, id, text) {
+  e.stopPropagation();
+  navigator.clipboard.writeText(unescape(text)).then(() => {
+    const btn = e.target;
+    btn.textContent = '✓ ok';
+    btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent='copy'; btn.classList.remove('copied'); }, 1500);
+  });
+}
 
-        function updateMonthYear() {
-            document.getElementById('monthYear').textContent = 
-                monthNames[currentDate.getMonth()] + ' ' + currentDate.getFullYear();
-        }
+render();
 
-        function isToday(date) {
-            const today = new Date();
-            return formatDate(date) === formatDate(today);
-        }
-
-        function hasTasks(date) {
-            return tasks[formatDate(date)] && tasks[formatDate(date)].length > 0;
-        }
-
-        function generateCalendar() {
-            const grid = document.getElementById('calendarGrid');
-            grid.innerHTML = '';
-
-            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-            
-            // Adjust for Monday start
-            const startDate = new Date(firstDay);
-            const dayOfWeek = firstDay.getDay();
-            startDate.setDate(startDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-
-            for (let i = 0; i < 42; i++) {
-                const date = new Date(startDate);
-                date.setDate(startDate.getDate() + i);
-
-                const dayElement = document.createElement('div');
-                dayElement.className = 'calendar-day';
-                dayElement.textContent = date.getDate();
-
-                if (date.getMonth() !== currentDate.getMonth()) {
-                    dayElement.classList.add('other-month');
-                }
-
-                if (isToday(date)) {
-                    dayElement.classList.add('today');
-                }
-
-                if (hasTasks(date)) {
-                    dayElement.classList.add('has-tasks');
-                    const indicator = document.createElement('div');
-                    indicator.className = 'task-indicator';
-                    dayElement.appendChild(indicator);
-                }
-
-                if (formatDate(date) === formatDate(selectedDate)) {
-                    dayElement.classList.add('selected');
-                }
-
-                dayElement.addEventListener('click', () => {
-                    document.querySelectorAll('.calendar-day').forEach(el => {
-                        el.classList.remove('selected');
-                    });
-                    dayElement.classList.add('selected');
-                    selectedDate = new Date(date);
-                    updateTaskList();
-                });
-
-                grid.appendChild(dayElement);
-            }
-        }
-
-        function updateTaskList() {
-            const dateStr = formatDate(selectedDate);
-            const dayTasks = tasks[dateStr] || [];
-            
-            document.getElementById('selectedDate').textContent = formatDisplayDate(selectedDate);
-            
-            const taskList = document.getElementById('taskList');
-            taskList.innerHTML = '';
-
-            if (dayTasks.length === 0) {
-                taskList.innerHTML = '<div class="no-tasks">На этот день задач нет</div>';
-                return;
-            }
-
-            dayTasks.forEach(task => {
-                const taskElement = document.createElement('div');
-                taskElement.className = `task-item priority-${task.priority}`;
-                
-                taskElement.innerHTML = `
-                    <div class="task-title">${task.title}</div>
-                    <div class="task-meta">
-                        Приоритет: ${task.priority === 'high' ? 'Высокий' : task.priority === 'medium' ? 'Средний' : 'Низкий'} • 
-                        Статус: ${task.status === 'completed' ? 'Завершено' : 'Активно'}
-                    </div>
-                `;
-
-                taskList.appendChild(taskElement);
-            });
-        }
-
-        function changeMonth(direction) {
-            currentDate.setMonth(currentDate.getMonth() + direction);
-            updateMonthYear();
-            generateCalendar();
-        }
-
-        // Инициализация
-        updateMonthYear();
-        generateCalendar();
-        updateTaskList();
-    </script>
+// Service Worker registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
 </body>
 </html>
